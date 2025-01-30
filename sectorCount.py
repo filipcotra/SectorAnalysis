@@ -11,8 +11,6 @@ CONTACT_THRESHOLD = 25.0
 # Setting a constant for data frame column names.
 COL_NAMES = ["S1", "S2", "S3", "S4", "S5", "S6", "S7", "S8", "S9", "S10", "S11", "S12"]
 
-# Tracking files with abnormal data.
-abnormalPDB = []
 # Creating dictionaries to track amino acid objects
 bb2bb = {} # Permanent BB2BB
 sc2bb = {} # Permanent SC2BB
