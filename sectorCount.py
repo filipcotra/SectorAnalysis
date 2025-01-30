@@ -1,6 +1,6 @@
 import sys
 import re
-from sectorContacts_class import sectorContacts
+import pandas as pd
 from printSectorInfo import printSectorInfo
 
 # Only input should be a file with a list of files.
@@ -8,6 +8,8 @@ files = open(sys.argv[1], "r")
 
 # Setting a constant for contact threshold.
 CONTACT_THRESHOLD = 25.0
+# Setting a constant for data frame column names.
+COL_NAMES = ["S1", "S2", "S3", "S4", "S5", "S6", "S7", "S8", "S9", "S10", "S11", "S12"]
 
 # Tracking files with abnormal data.
 abnormalPDB = []
@@ -27,14 +29,16 @@ sc_np = {} # Non-permanent SC contacts - with any other particle type
 def populateDict(parKey, contactKey, sectorKey, dict):
     if parKey in dict.keys():
         # If the contacted particle key has been encountered before, add to it.
-        if contactKey in dict[parKey].sectors[sectorKey].keys():
-            dict[parKey].sectors[sectorKey][contactKey] += 1
+        if contactKey in dict[parKey].index:
+            dict[parKey].at[contactKey, sectorKey] += 1
         else:
-            dict[parKey].sectors[sectorKey][contactKey] = 1
+            dict[parKey].loc[contactKey] = 0 # Adding a new row where everything is equal to 0
+            dict[parKey].at[contactKey, sectorKey] += 1
     # If the parKey has not been encountered, everything has to be initialized.
     else:
-        dict[parKey] = sectorContacts()
-        dict[parKey].sectors[sectorKey][contactKey] = 1
+        dict[parKey] = pd.DataFrame(columns = COL_NAMES)
+        dict[parKey].loc[contactKey] = 0 # Adding a new row where everything is equal to 0
+        dict[parKey].at[contactKey, sectorKey] += 1
 
 # Looping through the files, opening them.
 for fileName in files:
@@ -72,11 +76,8 @@ for fileName in files:
             sectorNum = int(re.search('(?<=\=).+', lineList[-1]).group(0).rstrip().lstrip())
         else:
             sectorNum = int(sectorInfo.rstrip().lstrip())
-        # Tracking any s = 0 values. If found, note the PDB file and move on.
+        # Tracking any s = 0 values. If found, just move on.
         if sectorNum == 0:
-            pdb = re.search('(?<=Results\/).*(?=.pdb)', fileName).group(0)
-            if pdb not in abnormalPDB:
-                abnormalPDB.append(pdb)
             continue
         # Tracking contact information.
         if contactArea < CONTACT_THRESHOLD:

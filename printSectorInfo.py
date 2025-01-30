@@ -1,5 +1,3 @@
-import pandas as pd
-
 # Defining a header to be used for all files.
 HEADER = f"#AA\tS1\tS2\tS3\tS4\tS5\tS6\tS7\tS8\tS9\tS10\ts11\tS12\n"
 # Defining columns for pandas dataframe.
@@ -20,35 +18,18 @@ def writeDf(df, fileName):
 # into separate files. I am aiming to make it output a computationally friendly
 # file format.
 # Parameters:
-#   sectorDict = The dictionary containing sectorContacts objects.
+#   dict = The dictionary containing dataframe objects.
 #   dictType = The name of the dictionary (bb2bb, bb2sc, etc.).
-def printSectorInfo(sectorDict, dictName):
-    for parCode in sectorDict.keys():
-        # Initializing a data frame with no rows.
-        countDf = pd.DataFrame(columns = COL_NAMES)
-        # Gathering information.
-        sectorContacts_obj = sectorDict[parCode]
-        sectorContacts_sectors = sectorContacts_obj.sectors
-        # Building dataframe.
-        for sector in sectorContacts_sectors.keys():
-            sectorAAs = sectorContacts_sectors[sector]
-            for AA in sectorAAs.keys():
-                contactCount = sectorAAs[AA]
-                try:
-                    countDf.loc[AA, sector] = contactCount
-                except:
-                    countDf.loc[AA] = [0] * numCols
-                    countDf.loc[AA, sector] = contactCount
+def printSectorInfo(dict, dictName):
+    for parKey in dict.keys():
+        countDf = dict[parKey] # Dataframes stored in the dictionary have count values
         # Making a file names.
-        countFileName = f"{parCode}.{dictName}.counts.txt"
-        sectorProbFileName = f"{parCode}.{dictName}.sectorProbs.txt"
-        AAProbFileName = f"{parCode}.{dictName}.AAProbs.txt"
+        countFileName = f"{parKey}.{dictName}.counts.txt"
+        sectorProbFileName = f"{parKey}.{dictName}.sectorProbs.txt"
+        AAProbFileName = f"{parKey}.{dictName}.AAProbs.txt"
         # Last preparations for writing data frames.
-        countDf = countDf.fillna(0)
         sectorProbDf = countDf.div(countDf.sum(axis = 0), axis = 1) # Probability distribution for each sector
-        sectorProbDf = sectorProbDf.fillna(0)
         AAProbDf = countDf.div(countDf.sum(axis = 1), axis = 0) # Probability distribution for each contacting AA
-        AAProbDf = AAProbDf.fillna(0)
         # Writing frames.
         writeDf(countDf, countFileName)
         writeDf(sectorProbDf, sectorProbFileName)
