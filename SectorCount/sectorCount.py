@@ -53,12 +53,12 @@ for fileName in files:
             # Information about the source particle.
             parName = lineList[1] # Name of the particle (V0, for example)
             parAA = parName[0] # One-letter AA code for the particle
-            parType = "bb" if parName[-1] == "0" else "sc" # 0 indicates backbone, 1 indicates sidechain
+            parType = "BB" if parName[-1] == "0" else "SC" # 0 indicates backbone, 1 indicates sidechain
             resNum = int(lineList[2]) # Residue number of the particle (Like 1)
             # Information about the contact particle.
             contactName = lineList[5] # Name of the contact particle (L0, for example)
             contactAA = contactName[0] # One-letter AA code for the contact particle
-            contactType = "bb" if contactName[-1] == "0" else "sc" # 0 indicates backbone, 1 indicates sidechain
+            contactType = "BB" if contactName[-1] == "0" else "SC" # 0 indicates backbone, 1 indicates sidechain
             contactResNum = int(lineList[6]) # Residue of the contact particle (Like 2)
             # General contact information.
             contactArea = float(lineList[8]) # Area of the contact (>25 indicates a contact)
@@ -82,18 +82,18 @@ for fileName in files:
             continue
         # This will be used as the key for the dictionaries
         parKey = f"{parAA}.{parType}"
-        contactKey = f"{contactAA}.{contactType}"
+        contactKey = f"{contactAA}_{contactType}"
         sectorKey = f"S{sectorNum}"
         # Populating contacts
-        if parType == "bb":
-            if (resDiff == 1 and contactType == "bb"): # Indicating a BB2BB contact
+        if parType == "BB":
+            if (resDiff == 1 and contactType == "BB"): # Indicating a BB2BB contact
                 populateDict(parKey, contactKey, sectorKey, bb2bb)
-            elif (resDiff == 0 and contactType == "sc"): # Indicating a BB2SC contact
+            elif (resDiff == 0 and contactType == "SC"): # Indicating a BB2SC contact
                 populateDict(parKey, contactKey, sectorKey, bb2sc)
             else: # Indicates a non-permanent BB contact
                 populateDict(parKey, contactKey, sectorKey, bb_np)
         else: # Indicating an SC particle
-            if (resDiff == 0 and contactType == "bb"): # Indicating a SC2BB contact
+            if (resDiff == 0 and contactType == "BB"): # Indicating a SC2BB contact
                 populateDict(parKey, contactKey, sectorKey, sc2bb)
             else: # Indicates a non-permanent SC contact
                 populateDict(parKey, contactKey, sectorKey, sc_np)

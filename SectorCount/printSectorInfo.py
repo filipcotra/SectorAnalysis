@@ -1,5 +1,3 @@
-# Defining a header to be used for all files.
-HEADER = f"#AA\tS1\tS2\tS3\tS4\tS5\tS6\tS7\tS8\tS9\tS10\ts11\tS12\n"
 # Defining columns for pandas dataframe.
 COL_NAMES = ["S1", "S2", "S3", "S4", "S5", "S6", "S7", "S8", "S9", "S10", "S11", "S12"]
 numCols = len(COL_NAMES)
@@ -10,8 +8,7 @@ numCols = len(COL_NAMES)
 #   fileName = A string representing the name of the file to be written to.
 def writeDf(df, fileName):
     outputFile = open(file = fileName, mode = "w")
-    outputFile.write(HEADER)
-    outputFile.write(df.to_csv(sep = '\t', header = False))
+    outputFile.write(df.to_csv(sep = '\t', header = True))
     outputFile.close()
 
 # This function will take a dictionary and print out all of its information
