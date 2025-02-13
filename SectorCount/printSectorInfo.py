@@ -1,7 +1,3 @@
-# Defining columns for pandas dataframe.
-COL_NAMES = ["S1", "S2", "S3", "S4", "S5", "S6", "S7", "S8", "S9", "S10", "S11", "S12"]
-numCols = len(COL_NAMES)
-
 # Simple function to write to file.
 # Parameters:
 #   df = The data frame to be written.
@@ -21,9 +17,9 @@ def printSectorInfo(dict, dictName):
     for parKey in dict.keys():
         countDf = dict[parKey] # Dataframes stored in the dictionary have count values
         # Making a file names.
-        countFileName = f"{parKey}.{dictName}.counts.txt"
-        sectorProbFileName = f"{parKey}.{dictName}.sectorProbs.txt"
-        AAProbFileName = f"{parKey}.{dictName}.AAProbs.txt"
+        countFileName = f"sectorCount/{dictName}/{parKey}.{dictName}.counts.txt"
+        sectorProbFileName = f"sectorCount/{dictName}/{parKey}.{dictName}.sectorProbs.txt"
+        AAProbFileName = f"sectorCount/{dictName}/{parKey}.{dictName}.AAProbs.txt"
         # Last preparations for writing data frames.
         sectorProbDf = countDf.div(countDf.sum(axis = 0), axis = 1) # Probability distribution for each sector
         AAProbDf = countDf.div(countDf.sum(axis = 1), axis = 0) # Probability distribution for each contacting AA

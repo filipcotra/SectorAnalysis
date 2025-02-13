@@ -81,22 +81,20 @@ for fileName in files:
         if contactArea < CONTACT_THRESHOLD:
             continue
         # This will be used as the key for the dictionaries
-        parKey = f"{parAA}.{parType}"
-        contactKey = f"{contactAA}_{contactType}"
         sectorKey = f"S{sectorNum}"
         # Populating contacts
         if parType == "BB":
             if (resDiff == 1 and contactType == "BB"): # Indicating a BB2BB contact
-                populateDict(parKey, contactKey, sectorKey, bb2bb)
+                populateDict(parName, contactName, sectorKey, bb2bb)
             elif (resDiff == 0 and contactType == "SC"): # Indicating a BB2SC contact
-                populateDict(parKey, contactKey, sectorKey, bb2sc)
+                populateDict(parName, contactName, sectorKey, bb2sc)
             else: # Indicates a non-permanent BB contact
-                populateDict(parKey, contactKey, sectorKey, bb_np)
+                populateDict(parName, contactName, sectorKey, bb_np)
         else: # Indicating an SC particle
             if (resDiff == 0 and contactType == "BB"): # Indicating a SC2BB contact
-                populateDict(parKey, contactKey, sectorKey, sc2bb)
+                populateDict(parName, contactName, sectorKey, sc2bb)
             else: # Indicates a non-permanent SC contact
-                populateDict(parKey, contactKey, sectorKey, sc_np)
+                populateDict(parName, contactName, sectorKey, sc_np)
     currFile.close()
 # Writing results to files.
 printSectorInfo(bb2bb, "bb2bb")
