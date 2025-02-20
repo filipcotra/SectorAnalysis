@@ -1,7 +1,6 @@
 import sys
 import re
 import pandas as pd
-from printSectorInfo import printSectorInfo
 
 # Only input should be a file with a list of files.
 files = open(sys.argv[1], "r")
@@ -10,13 +9,49 @@ files = open(sys.argv[1], "r")
 CONTACT_THRESHOLD = 25.0
 # Setting a constant for data frame column names.
 COL_NAMES = ["S1", "S2", "S3", "S4", "S5", "S6", "S7", "S8", "S9", "S10", "S11", "S12"]
-
+ROW_NAMES = ["A0", "A1", "C0", "C1", "D0", "D1", "E0", "E1", "F0", "F1", "G0", "G1",
+             "H0", "H1", "I0", "I1", "K0", "K1", "L0", "L1", "M0", "M1", "N0", "N1",
+             "P0", "P1", "Q0", "Q1", "R0", "R1", "S0", "S1", "T0", "T1", "V0", "V1",
+             "W0", "W1", "Y0", "Y1"]
 # Creating dictionaries to track amino acid objects
 bb2bb = {} # Permanent BB2BB
 sc2bb = {} # Permanent SC2BB
 bb2sc = {} # Permanent BB2SC - inverse of previous
 bb_np = {} # Non-permanent BB contacts - with any other particle type
 sc_np = {} # Non-permanent SC contacts - with any other particle type
+
+# Simple function to write to file.
+# Parameters:
+#   df = The data frame to be written.
+#   fileName = A string representing the name of the file to be written to.
+def writeDf(df, fileName):
+    outputFile = open(file = fileName, mode = "w")
+    outputFile.write(df.to_csv(sep = '\t', header = True))
+    outputFile.close()
+
+# This function will take a dictionary and print out all of its information
+# into separate files. I am aiming to make it output a computationally friendly
+# file format.
+# Parameters:
+#   dict = The dictionary containing dataframe objects.
+#   dictType = The name of the dictionary (bb2bb, bb2sc, etc.).
+def printSectorInfo(dict, dictName):
+    for parKey in dict.keys():
+        countDf = dict[parKey] # Dataframes stored in the dictionary have count values
+        # Making a file names.
+        countFileName = f"sectorCount/{dictName}/{parKey}.{dictName}.counts.txt"
+        sectorProbFileName = f"sectorCount/{dictName}/{parKey}.{dictName}.sectorProbs.txt"
+        AAProbFileName = f"sectorCount/{dictName}/{parKey}.{dictName}.AAProbs.txt"
+        # Last preparations for writing data frames.
+        sectorProbDf = countDf.div(countDf.sum(axis = 0), axis = 1) # Probability distribution for each sector
+        AAProbDf = countDf.div(countDf.sum(axis = 1), axis = 0) # Probability distribution for each contacting AA
+        # Replacing any NaNs with 0s.
+        sectorProbDf = sectorProbDf.fillna(0);
+        AAProbDf = AAProbDf.fillna(0);
+        # Writing frames.
+        writeDf(countDf, countFileName)
+        writeDf(sectorProbDf, sectorProbFileName)
+        writeDf(AAProbDf, AAProbFileName)
 
 # This function will just populate a given dictionary with a provided value.
 # Parameters:
@@ -26,16 +61,10 @@ sc_np = {} # Non-permanent SC contacts - with any other particle type
 #   dict = the dictionary to be filled.
 def populateDict(parKey, contactKey, sectorKey, dict):
     if parKey in dict.keys():
-        # If the contacted particle key has been encountered before, add to it.
-        if contactKey in dict[parKey].index:
-            dict[parKey].at[contactKey, sectorKey] += 1
-        else:
-            dict[parKey].loc[contactKey] = 0 # Adding a new row where everything is equal to 0
-            dict[parKey].at[contactKey, sectorKey] += 1
+        dict[parKey].at[contactKey, sectorKey] += 1
     # If the parKey has not been encountered, everything has to be initialized.
     else:
-        dict[parKey] = pd.DataFrame(columns = COL_NAMES)
-        dict[parKey].loc[contactKey] = 0 # Adding a new row where everything is equal to 0
+        dict[parKey] = pd.DataFrame(0, columns = COL_NAMES, index = ROW_NAMES)
         dict[parKey].at[contactKey, sectorKey] += 1
 
 # Looping through the files, opening them.
