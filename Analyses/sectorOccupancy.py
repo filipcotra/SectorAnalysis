@@ -1,5 +1,17 @@
 import pandas as pd;
 
+# Defining constants for fetchInfo returns.
+i_PAR_NAME = 0;
+i_PAR_AA = 1;
+i_PAR_TYPE = 2;
+i_PAR_RES = 3;
+i_CONTACT_NAME = 4;
+i_CONTACT_AA = 5;
+i_CONTACT_TYPE = 6;
+i_CONTACT_RES = 7;
+i_CONTACT_AREA = 8;
+i_SECTOR_NUM = 9;
+i_RES_DIFF = 10;
 # Setting a constant for data frame column names.
 COL_NAMES = ["S1", "S2", "S3", "S4", "S5", "S6", "S7", "S8", "S9", "S10", "S11", "S12"];
 # Setting a constant for data frame row names.
@@ -8,7 +20,7 @@ ROW_NAMES = ["A0", "A1", "C0", "C1", "D0", "D1", "E0", "E1", "F0", "F1", "G0", "
              "P0", "P1", "Q0", "Q1", "R0", "R1", "S0", "S1", "T0", "T1", "V0", "V1",
              "W0", "W1", "Y0", "Y1"];
 # Tracking data frames for each sector. One frame for each sector.
-sectorDFs = {1: pd.DataFrame(0, columns = COL_NAMES, index = ROW_NAMES),
+sectorDfs = {1: pd.DataFrame(0, columns = COL_NAMES, index = ROW_NAMES),
              2: pd.DataFrame(0, columns = COL_NAMES, index = ROW_NAMES),
              3: pd.DataFrame(0, columns = COL_NAMES, index = ROW_NAMES),
              4: pd.DataFrame(0, columns = COL_NAMES, index = ROW_NAMES),
@@ -21,41 +33,37 @@ sectorDFs = {1: pd.DataFrame(0, columns = COL_NAMES, index = ROW_NAMES),
              11: pd.DataFrame(0, columns = COL_NAMES, index = ROW_NAMES),
              12: pd.DataFrame(0, columns = COL_NAMES, index = ROW_NAMES)};
 
-# Tracking current particle and contact.
-currPar = None;
-currContacts = [];
+# Purpose: To populate the sector fata frames.
+# Parameters:
+#   parName = The name of the contacting particle.
+#   sectorNum = The sector number of the contact particle.
+#   otherContacts = The set of contacts not including the current one.
+def populateDict(parName, sectorNum, otherSectors):
+    parDf = sectorDfs[sectorNum];
+    for otherSector in otherSectors:
+        sectorCol = f"S{otherSector[2]}";
+        parDf.at[parName, sectorCol] += 1;
+
 # Purpose: To collect stats for occupancy analysis from the line data.
 # Parameters:
-#   parName = The name of the given particle.
-#   parRes = The residue number for the given particle.
-#   contactName = The name of the contact particle.
-#   contactRes = The residue number for the contact particle.
-#   sectorNum = The sector number for the given contact.
-def occupancyAnalysis(parName, parRes, contactName, contactRes, sectorNum):
-    global sectorDFs, currPar, currContacts;
-    parKey = (parName, parRes);
-    # If the new particle is not the same as the current one, that means we've moved on.
-    # Should store current particle information and reassign the new particle.
-    if parKey != currPar:
-        # Populating.
-        for contact in currContacts:
-            otherSectors = [x for x in currContacts if x != contact]; # All other contacts
-            sourcePar = contact[0];
-            sourceSector = contact[2]; # The sector of the current iterable
-            sourceDf = sectorDFs[sourceSector];
-            for otherSector in otherSectors:
-                sectorCol = f"S{otherSector[2]}";
-                sourceDf.at[sourcePar, sectorCol] += 1;
-        currContacts = [];
-        currPar = parKey;
-    # Regardless, we should populate the current contacts.
-    currContacts.append((contactName, contactRes, sectorNum)); # Ex: (V0, 1, 3).
+#   contactSet = The set of contacts for the current particle.
+def occupancyAnalysis(contactSet):
+    global sectorDfs;
+    # Iterating through the contact set.
+    for contact in contactSet:
+        otherSectors = [x for x in contactSet if x != contact]; # All other contacts
+        sourcePar = contact[i_PAR_NAME];
+        sourceSector = contact[i_SECTOR_NUM]; # The sector of the current iterable
+        sourceDf = sectorDfs[sourceSector];
+        for otherSector in otherSectors:
+            sectorCol = f"S{otherSector[i_SECTOR_NUM]}";
+            sourceDf.at[sourcePar, sectorCol] += 1;
 
 # Purpose: To print the occupancy data.
 def printOccupancyOutput():
-    global sectorDFs;
-    for sector in sectorDFs.keys():
-        countDf = sectorDFs[sector];
+    global sectorDfs;
+    for sector in sectorDfs.keys():
+        countDf = sectorDfs[sector];
         countFile = f"sectorOccupancy/S{sector}.occupancy.count.txt";
         probFile = f"sectorOccupancy/S{sector}.occupancy.prob.txt";
         count_outputFile = open(countFile, "w");

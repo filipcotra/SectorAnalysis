@@ -1,7 +1,19 @@
 import re;
 
 # The area limit for what is considered a contact.
-CONTACT_THRESHOLD = 25.0
+CONTACT_THRESHOLD = 20.0;
+# Defining constants for fetchInfo returns.
+i_PAR_NAME = 0;
+i_PAR_AA = 1;
+i_PAR_TYPE = 2;
+i_PAR_RES = 3;
+i_CONTACT_NAME = 4;
+i_CONTACT_AA = 5;
+i_CONTACT_TYPE = 6;
+i_CONTACT_RES = 7;
+i_CONTACT_AREA = 8;
+i_SECTOR_NUM = 9;
+i_RES_DIFF = 10;
 
 # Purpose: To fetch info from a given line.
 # Parameters:
@@ -46,6 +58,27 @@ def fetchLineInfo(line):
     if sectorNum == 0:
         return False
     # Returning collected information.
-    return [parName, parAA, parType, parRes,
+    return (parName, parAA, parType, parRes,
             contactName, contactAA, contactType, contactRes,
-            contactArea, sectorNum, resDiff];
+            contactArea, sectorNum, resDiff);
+
+# Purpose: To filter a contact set, removing any contacts which
+# share a sector with another, keeping the contact with the higher
+# area.
+# Parameters:
+#   contactSet = The set of contacts for a particle.
+# Return:
+#   filterSet = The filtered set of contacts.
+def filterSet(contactSet):
+    toRemove = set();
+    i = 0;
+    while i < len(contactSet):
+        contact = contactSet[i];
+        otherContacts = [x for x in contactSet if x != contact];
+        for otherContact in otherContacts:
+            if contact[i_SECTOR_NUM] == otherContact[i_SECTOR_NUM]:
+                toPop = contact if contact[i_CONTACT_AREA] < otherContact[i_CONTACT_AREA] else otherContact;
+                toRemove.add(toPop);
+        i += 1;
+    filterSet = [x for x in contactSet if x not in toRemove];
+    return filterSet;
