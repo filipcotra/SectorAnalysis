@@ -1,4 +1,5 @@
 import pandas as pd;
+import os;
 
 # Defining constants for fetchInfo returns.
 i_PAR_NAME = 0;
@@ -64,11 +65,14 @@ def printOccupancyOutput():
     global sectorDfs;
     for sector in sectorDfs.keys():
         countDf = sectorDfs[sector];
-        countFile = f"sectorOccupancy/S{sector}.occupancy.count.txt";
-        probFile = f"sectorOccupancy/S{sector}.occupancy.prob.txt";
+        probDf = countDf.div(countDf.sum(axis = 1), axis = 0); # Along each row
+        probDf = probDf.fillna(0)
+        countFile = f"sectorOccupancy/Count/S{sector}.occupancy.count.txt";
+        probFile = f"sectorOccupancy/Prob/S{sector}.occupancy.prob.txt";
+        os.makedirs(os.path.dirname(probFile), exist_ok = True);
+        os.makedirs(os.path.dirname(countFile), exist_ok = True);
         count_outputFile = open(countFile, "w");
         prob_outputFile = open(probFile, "w");
-        probDf = countDf.div(countDf.sum(axis = 1), axis = 0); # Along each row
         count_outputFile.write(countDf.to_csv(sep = '\t', header = True));
         prob_outputFile.write(probDf.to_csv(sep = '\t', header = True));
         count_outputFile.close();

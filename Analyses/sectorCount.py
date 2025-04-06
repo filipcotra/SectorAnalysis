@@ -1,4 +1,5 @@
 import pandas as pd;
+import os;
 
 # Defining constants for fetchInfo returns.
 i_PAR_NAME = 0;
@@ -82,15 +83,14 @@ def countAnalysis(contactSet):
 #   dict = The dictionary to print out.
 def printSectorInfo(dict):
     global sectorCounts_NP, sectorCounts_peptideBonds_minus1, sectorCounts_peptideBonds_plus1, sectorCounts_rGroupBonds;
-    fileSig = None;
     if dict is sectorCounts_NP:
-        fileSig = "NP";
+        dictSig = "NP";
     elif dict is sectorCounts_peptideBonds_minus1:
-        fileSig = "BB2BB_minus1";
+        dictSig = "BB2BB_minus1";
     elif dict is sectorCounts_peptideBonds_plus1:
-        fileSig = "BB2BB_plus1";
+        dictSig = "BB2BB_plus1";
     elif dict is sectorCounts_rGroupBonds:
-        fileSig = "rGroup"
+        dictSig = "rGroup";
     for parKey in dict.keys():
         countDf = dict[parKey]; # Dataframes stored in the dictionary have count values
         sectorProbDf = countDf.div(countDf.sum(axis = 0), axis = 1); # Probability distribution for each sector
@@ -99,9 +99,13 @@ def printSectorInfo(dict):
         sectorProbDf = sectorProbDf.fillna(0);
         AAProbDf = AAProbDf.fillna(0);
         # Making a file names.
-        countFile = f"sectorCount/{parKey}.{fileSig}.sectorCounts.txt";
-        sectorProbFile = f"sectorCount/{parKey}.{fileSig}.sectorProbs.txt";
-        AAProbFile = f"sectorCount/{parKey}.{fileSig}.AAProbs.txt";
+        countFile = f"sectorCount/SectorCount/{dictSig}/{parKey}.sectorCounts.txt";
+        sectorProbFile = f"sectorCount/SectorProb/{dictSig}/{parKey}.sectorProbs.txt";
+        AAProbFile = f"sectorCount/AAProb/{dictSig}/{parKey}.AAProbs.txt";
+        # Creating the necessary dictionaries.
+        os.makedirs(os.path.dirname(countFile), exist_ok = True);
+        os.makedirs(os.path.dirname(sectorProbFile), exist_ok = True);
+        os.makedirs(os.path.dirname(AAProbFile), exist_ok = True);
         # Opening files.
         count_outputFile = open(countFile, "w");
         sectorProb_outputFile = open(sectorProbFile, "w");

@@ -1,4 +1,5 @@
 import pandas as pd;
+import os;
 
 # Defining constants for fetchInfo returns.
 i_PAR_NAME = 0;
@@ -36,21 +37,30 @@ def populateDict(parName, contactNum):
 # Parameters:
 #   currPar = The current particle.
 #   contactSet = The set of contacts for the current particle.
-def capacityAnalysis(currPar, contactSet):
+def capacityAnalysis(currPar, contactSet, extraContacts):
     parName = currPar[i_PAR_NAME];
     # Iterating through the contactSet to populate the data frames.
-    contactNum = len(contactSet);
-    populateDict(parName, contactNum);
+    contactNum = len(contactSet) + extraContacts;
+    # If contactNum is greater than 12, just set it to 12 as this is the maximum.
+    if contactNum > 12:
+        contactNum = 12;
+    # If there are 0 contacts, we cannot populate anything regardless.
+    elif contactNum > 0:
+        populateDict(parName, contactNum);
 
 # Purpose: To print the output.
 def printParticleOutput():
     global contactDict;
     for resName in contactDict.keys():
-        count_fileName = f"particleCapacity/{resName}.contactCapacity.count.txt"
-        prob_fileName = f"particleCapacity/{resName}.contactCapacity.prob.txt"
+        count_fileName = f"particleCapacity/Count/{resName}.contactCapacity.count.txt";
+        prob_fileName = f"particleCapacity/Prob/{resName}.contactCapacity.prob.txt";
+        os.makedirs(os.path.dirname(prob_fileName), exist_ok = True);
+        os.makedirs(os.path.dirname(count_fileName), exist_ok = True);
+        # Filling NaN values with 0s.
         countDf = contactDict[resName]
         probDf = countDf.div(countDf.sum(axis = 1), axis = 0) # Probability distribution for number of contacts.
         probDf = probDf.rename(index = {"Count": "Prob"})
+        probDf.fillna(0);
         # Writing to files.
         countFile = open(count_fileName, "w")
         probFile = open(prob_fileName, "w")

@@ -7,6 +7,7 @@ from Analyses.sectorOccupancy import occupancyAnalysis, printOccupancyOutput;
 # Defining constants for fetchInfo returns.
 i_PAR_NAME = 0;
 i_PAR_RES = 3;
+i_EXTRA_CONTACTS = 4;
 # Only input should be a file with a list of files.
 files = open(sys.argv[sys.argv.index("-f") + 1], "r");
 # Checking which analyses will be performed.
@@ -25,6 +26,7 @@ for fileName in files:
     currPar = None;
     lastPar = None;
     contactSet = []; # Want to track all the contact info for the current particle.
+    extraContacts = 0;
     for line in currFile:
         lineInfo = fetchLineInfo(line);
         # If fetchLineInfo returns False, continue to the next line.
@@ -39,18 +41,25 @@ for fileName in files:
             # Call appropriate functions. contactSet will only contain
             # real contacts.
             if performCapacity:
-                capacityAnalysis(lastPar, filteredSet);
+                capacityAnalysis(lastPar, filteredSet, extraContacts);
             if performCount:
                 countAnalysis(filteredSet);
             if performOccupancy:
                 occupancyAnalysis(filteredSet);
             contactSet = [];
+            extraContacts = 0;
             lastPar = currPar;
         # Adding the contact to the contact set regardless.
-        contactSet.append(lineInfo);
+        if "SAS" not in lineInfo:
+            contactSet.append(lineInfo);
+        else: # This is a solvent line.
+            extraContacts = lineInfo[i_EXTRA_CONTACTS];
     currFile.close();
 # Printing all output.
-printParticleOutput();
-printCountOutput();
-printOccupancyOutput();
+if performCapacity:
+    printParticleOutput();
+if performCount:
+    printCountOutput();
+if performOccupancy:
+    printOccupancyOutput();
 

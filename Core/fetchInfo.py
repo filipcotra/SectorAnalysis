@@ -23,8 +23,17 @@ i_RES_DIFF = 10;
 def fetchLineInfo(line):
     lineList = line.split();  # Splitting by any empty space.
     # Skipping non-informative lines.
-    if "SAS" in line or "#" in line or line == "\n" or line == "":
+    if "#" in line or line == "\n" or line == "":
         return False;
+    if "SAS" in line:
+        parName = lineList[1];
+        parAA = parName[0];
+        parRes = int(lineList[2]);
+        contactName = lineList[4]
+        parType = "BB" if parName[-1] == "0" else "SC";
+        contactArea = float(lineList[7]);
+        extraContacts = int(contactArea // CONTACT_THRESHOLD);
+        return (parName, parAA, parType, parRes, contactName, extraContacts);
     # Collecting important information.
     try:
         # Information about the source particle.
