@@ -7,7 +7,7 @@ from Analyses.sectorOccupancy import occupancyAnalysis, printOccupancyOutput;
 # Defining constants for fetchInfo returns.
 i_PAR_NAME = 0;
 i_PAR_RES = 3;
-i_EXTRA_CONTACTS = 4;
+i_EXTRA_CONTACTS = 5;
 # Only input should be a file with a list of files.
 files = open(sys.argv[sys.argv.index("-f") + 1], "r");
 # Checking which analyses will be performed.
