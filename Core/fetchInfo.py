@@ -1,7 +1,11 @@
 import re;
 
-# The area limit for what is considered a contact.
-CONTACT_THRESHOLD = 20.0;
+# The distance limit for what is considered a contact.
+# This is based on this paper, which indicates that
+# 7 angstroms is the best contact distance for
+# distinguishing between folds:
+# https://bmcbioinformatics.biomedcentral.com/articles/10.1186/1471-2105-13-292
+DISTANCE_THRESHOLD = 7;
 # Defining constants for fetchInfo returns.
 i_PAR_NAME = 0;
 i_PAR_AA = 1;
@@ -14,6 +18,7 @@ i_CONTACT_RES = 7;
 i_CONTACT_AREA = 8;
 i_SECTOR_NUM = 9;
 i_RES_DIFF = 10;
+i_CONTACT_DISTANCE = 11;
 
 # Purpose: To fetch info from a given line.
 # Parameters:
@@ -21,55 +26,43 @@ i_RES_DIFF = 10;
 # Return:
 #   A list of parameters fetched from the line.
 def fetchLineInfo(line):
-    lineList = line.split();  # Splitting by any empty space.
-    # Skipping non-informative lines.
-    if "#" in line or line == "\n" or line == "":
+    lineList = line.rstrip().lstrip().split(); # Splitting by any empty space.
+    # Skipping non-informative lines. Also skipping solvent for now.
+    if "#" in line or line == "\n" or line == "" or "SAS" in line or lineList[0] == "expected":
         return False;
-    if "SAS" in line:
-        parName = lineList[1];
-        parAA = parName[0];
-        parRes = int(lineList[2]);
-        contactName = lineList[4]
-        parType = "BB" if parName[-1] == "0" else "SC";
-        contactArea = float(lineList[7]);
-        extraContacts = int(contactArea // CONTACT_THRESHOLD);
-        return (parName, parAA, parType, parRes, contactName, extraContacts);
-    # Collecting important information.
-    try:
-        # Information about the source particle.
-        parName = lineList[1];  # Name of the particle (V0, for example)
-        parAA = parName[0];  # One-letter AA code for the particle
-        parType = "BB" if parName[-1] == "0" else "SC";  # 0 indicates backbone, 1 indicates sidechain
-        parRes = int(lineList[2]);  # Residue number of the particle (Like 1)
-        # Information about the contact particle.
-        contactName = lineList[5];  # Name of the contact particle (L0, for example)
-        contactAA = contactName[0];  # One-letter AA code for the contact particle
-        contactType = "BB" if contactName[-1] == "0" else "SC";  # 0 indicates backbone, 1 indicates sidechain
-        contactRes = int(lineList[6]);  # Residue of the contact particle (Like 2)
-        # General contact information.
-        contactArea = float(lineList[8]);  # Area of the contact (>25 indicates a contact)
-        sectorInfo = lineList[-1];  # Sector of the contact particle relative to the current particle
-        # Calculating the difference between the residue positions.
-        resDiff = abs(contactRes - parRes);
-    except:
-        return False;
-    # Skipping lines that are not real contacts or are describing non-real particles.
-    if contactArea < CONTACT_THRESHOLD:
-        return False;
-    if parAA == "X" or contactAA == "X":  # Abnormal amino acids - unknown identity.
-        return False;
+    # Information about the source particle.
+    parName = lineList[1];  # Name of the particle (V0, for example)
+    parAA = parName[0];  # One-letter AA code for the particle
+    parType = "BB" if parName[-1] == "0" else "SC";  # 0 indicates backbone, 1 indicates sidechain
+    parRes = int(lineList[2]);  # Residue number of the particle (Like 1)
+    # Information about the contact particle.
+    contactName = lineList[5];  # Name of the contact particle (L0, for example)
+    contactAA = contactName[0];  # One-letter AA code for the contact particle
+    contactType = "BB" if contactName[-1] == "0" else "SC";  # 0 indicates backbone, 1 indicates sidechain
+    contactRes = int(lineList[6]);  # Residue of the contact particle (Like 2)
+    # General contact information.
+    contactArea = float(lineList[8]);  # Area of the contact (>25 indicates a contact)
+    sectorInfo = lineList[-1];  # Sector of the contact particle relative to the current particle
+    # Calculating the difference between the residue positions.
+    resDiff = abs(contactRes - parRes);
     # Getting sector information.
     if "=" in sectorInfo:
-        sectorNum = int(re.search('(?<=\=).+', lineList[-1]).group(0).rstrip().lstrip());
+        sectorNum = int(re.search('(?<=\=).+', sectorInfo).group(0).rstrip().lstrip());
+        distanceInfo = lineList[-2];
     else:
         sectorNum = int(sectorInfo.rstrip().lstrip());
-    # Skipping lines describing sector 0 contacts.
-    if sectorNum == 0:
+        distanceInfo = lineList[-3];
+    if "=" in distanceInfo:
+        contactDistance = float(re.search('(?<=\=).+', distanceInfo).group(0).rstrip().lstrip());
+    else:
+        contactDistance = float(distanceInfo);
+    # Skipping lines describing sector 0 contacts or those with distances
+    # below the threshold. Also skipping abnormal amino-acids.
+    if sectorNum == 0 or contactDistance > DISTANCE_THRESHOLD or parAA == "X" or contactAA == "X":
         return False
-    # Returning collected information.
     return (parName, parAA, parType, parRes,
             contactName, contactAA, contactType, contactRes,
-            contactArea, sectorNum, resDiff);
+            contactArea, sectorNum, resDiff, contactDistance);
 
 # Purpose: To filter a contact set, removing any contacts which
 # share a sector with another, keeping the contact with the higher
