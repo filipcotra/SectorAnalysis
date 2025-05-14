@@ -32,23 +32,22 @@ SECTORS = ["S1", "S2", "S3", "S4", "S5", "S6", "S7", "S8", "S9", "S10", "S11", "
 # None of the data frames will have indexes - they must be added as they are
 # identified. No redundancies will be allowed.
 # ------------------- One stat -------------------
-df_parSec_NP = pd.DataFrame(columns = ["Count"]); # Particle/Sector to Particle/Sector
-df_sharedCon_NP = pd.DataFrame(columns = ["Count"]);
-df_seqSep_NP = pd.DataFrame(columns = ["Count"]);
-df_parCap_NP = pd.DataFrame(data = np.zeros((len(PAR_NAMES), 13)), index = PAR_NAMES, columns = [f"N{x}" for x in range(13)]); # Maximum 12 contacts, minimum 0.
+df_parSec_NP = pd.DataFrame(columns = ["Count"]); # Particle/Sector to Particle/Sector pair incidence
+df_parCap_NP = pd.DataFrame(data = np.zeros((len(PAR_NAMES), 13)),
+                            index = PAR_NAMES,
+                            columns = [f"{x}" for x in range(13)]); # The number of contacts a particle has
+df_sharedCon_NP = pd.DataFrame(columns = ["Count"]); # The number of shared contacts N between the two particles of a contact
+df_seqSep_NP = pd.DataFrame(columns = ["Count"]); # The sequence separation between two contacting particles
 df_conSep_NP = pd.DataFrame(columns = ["Count"]); # The number of contacts separating two particles, ignoring the current edge.
 # ------------------- Five stats -------------------
 # Particle/sector pairwise x shared contacts x sequence separation x particle capacity x contact separation.
-df_all_NP = pd.DataFrame(columns = ["Count"]);
+df_all_NP = pd.DataFrame(columns = ["Particle.Sector.Pair", "Shared.Contacts", "Sequence.Separation",
+                                    "Particle.Capacity", "Contact.Separation", "Count"]);
 
 # Making data frames to hold the individual stats for permanent contacts.
 # These will not be separated for permanent contact type, as it should
 # be fairly obvious from the resulting data (which the model should account for).
-# ------------------- One stat -------------------
-df_parSec_P = pd.DataFrame(columns = ["Count"]); # Particle pairs may influence sector pairs.
-df_seqDiff_P = pd.DataFrame(columns = ["Count"]); # This should help confer directionality in ways that seqSep won't.
-# ------------------- Two stats -------------------
-df_all_P = pd.DataFrame(columns = ["Count"]);
+df_P = pd.DataFrame(columns = ["Particle.Sector.Pair", "Sequence.Difference", "Count"]); # Particle pairs may influence sector pairs.
 
 # Purpose: To analyze stats pertaining to contact pairs and
 # particle properties, particle types, sector interactions,
@@ -63,7 +62,7 @@ def analyze(edgeSet, contactSet):
         parA_isBB = edge[i_EDGE_NAME_A][-1] == "0";
         parB_isBB = edge[i_EDGE_NAME_B][-1] == "0";
         # Only happens with R group bonds or peptide bonds.
-        if resDiff == 0 or resDiff == 1 and parA_isBB and parB_isBB:
+        if resDiff == 0 or (resDiff == 1 and parA_isBB and parB_isBB):
             analyzeP(edge);
         else:
             analyzeNP(edge, contactSet);
@@ -92,7 +91,8 @@ def analyzeNP(edge, contactSet):
     # Information pertaining to both particles.
     seqDiff = A_parRes - B_parRes;
     seqSep = abs(seqDiff);
-    sharedContacts = getNumShared(A_contactSet, B_contactSet);
+    shared = getNumShared(A_contactSet, B_contactSet);
+    numShared = len(shared);
     contactSep = getContactSep(A_par, B_par, seqSep, A_sector, contactSet);
     # Setting some variables to define key orders. If done
     # properly, this should remove the need to check for
@@ -110,22 +110,25 @@ def analyzeNP(edge, contactSet):
     # ----- One stat -----
     # Building keys.
     key_parSec = f"{parName_1}/S{sector_1};{parName_2}/S{sector_2}";
-    key_sharedCon = f"C{sharedContacts}";
-    key_seqSep = f"D{seqSep}";
-    key_parCap = f"N{parCap_1};N{parCap_2}";
-    key_contactSep = f"E{contactSep}";
+    key_parCap = f"{parCap_1};{parCap_2}";
+    key_sharedCon = f"{numShared}";
+    key_seqSep = f"{seqSep}";
+    key_conSep = f"{contactSep}";
     # Counting.
     populateDf(rowKey = key_parSec, df = df_parSec_NP);
+    populateDf(rowKey = parName_1, df = df_parCap_NP, colKey = f"{parCap_1}"); # Particle A capacity.
+    populateDf(rowKey = parName_2, df = df_parCap_NP, colKey = f"{parCap_2}"); # Particle B capacity.
     populateDf(rowKey = key_sharedCon, df = df_sharedCon_NP);
     populateDf(rowKey = key_seqSep, df = df_seqSep_NP);
-    populateDf(rowKey = A_parName, df = df_parCap_NP, colKey = f"N{A_numContacts}"); # Particle A capacity.
-    populateDf(rowKey = B_parName, df = df_parCap_NP, colKey = f"N{B_numContacts}"); # Particle B capacity.
-    populateDf(rowKey = key_contactSep, df = df_conSep_NP);
+    populateDf(rowKey = key_conSep, df = df_conSep_NP);
     # ----- Five stat keys -----
     # Building key.
-    key_all = "|".join([key_parSec, key_sharedCon, key_seqSep, key_parCap, key_contactSep]);
+    key_all = "|".join([key_parSec, key_parCap, key_sharedCon, key_seqSep, key_conSep]);
     # Counting.
-    populateDf(rowKey = key_all, df = df_all_NP);
+    if key_all in df_all_NP.index:
+        df_all_NP.loc[key_all, "Count"] += 1;
+    else:
+        df_all_NP.loc[key_all] = [key_parSec,  key_parCap, key_sharedCon, key_seqSep, key_conSep, 1];
 
 # Purpose: To populate data frames with permanent contact
 # information.
@@ -153,18 +156,16 @@ def analyzeP(edge):
     sector_1 = A_sector if parName_1 is A_parName else B_sector;
     sector_2 = B_sector if sector_1 is A_sector else A_sector;
     # Collecting stats.
-    # ----- One stat -----
     # Building keys.
     key_parSec = f"{parName_1}/S{sector_1};{parName_2}/{sector_2}";
-    key_seqDiff = f"F{seqDiff}";
-    # Counting.
-    populateDf(rowKey = key_parSec, df = df_parSec_P);
-    populateDf(rowKey = key_seqDiff, df = df_seqDiff_P);
-    # ----- Two stats -----
+    key_seqDiff = f"{seqDiff}";
     # Building keys.
-    key_all = ";".join([key_parSec, key_seqDiff]);
+    key_all = "|".join([key_parSec, key_seqDiff]);
     # Counting.
-    populateDf(rowKey = key_all, df = df_all_P);
+    if key_all in df_P.index:
+        df_P.loc[key_all, "Count"] += 1;
+    else:
+        df_P.loc[key_all] = [key_parSec, key_seqDiff, 1];
 
 # Purpose: To find the contact separation between two particles.
 # Parameters:
@@ -204,18 +205,19 @@ def getContactSep(A_par, B_par, ignoreSector_A, seqSep, contactSet):
         del contactPars;
     return sep;
 
-# Purpose: To find the number of shared contacts between
-# two contact sets.
+# Purpose: To find the set of shared contacts and return their
+# amount.
 # Parameters:
 #   A_contactSet = Contact set A.
 #   B_contactSet = Contact set B.
 # Return:
-#   The number of contacts shared between the two sets.
+#   shared = A list of particles in contact with both A and B.
+#   total = A list of particles in contact with A or B.
 def getNumShared(A_contactSet, B_contactSet):
     A_contacts = set([(x[i_CONTACT_NAME], x[i_CONTACT_RES]) for x in A_contactSet]);
     B_contacts = set([(x[i_CONTACT_NAME], x[i_CONTACT_RES]) for x in B_contactSet]);
     shared = list(A_contacts & B_contacts);
-    return len(shared);
+    return shared;
 
 # Purpose: To populate a given data frame.
 # Parameters:
@@ -228,22 +230,18 @@ def populateDf(rowKey, df, colKey = "Count"):
     else:
         df.loc[rowKey, colKey] = 1;
 
-# Purpose: To write all of the dataframes to files.
+# Purpose: To write stat dataframes to files.
 # Parameters:
 #   outputPath = The path to the output file.
 def export(outputPath):
     # Non-permanent stats.
     # ------------------- One stat -------------------
     df_parSec_NP.to_csv(f"{outputPath}/NP_stats_particleSectorPairs.tsv", sep = "\t", index = True);
+    df_parCap_NP.to_csv(f"{outputPath}/NP_stats_particleCapacity.tsv", sep = "\t", index = True);
     df_sharedCon_NP.to_csv(f"{outputPath}/NP_stats_sharedContacts.tsv", sep = "\t", index = True);
     df_seqSep_NP.to_csv(f"{outputPath}/NP_stats_sequenceSeparation.tsv", sep = "\t", index = True);
-    df_parCap_NP.to_csv(f"{outputPath}/NP_stats_particleCapacity.tsv", sep = "\t", index = True);
     df_conSep_NP.to_csv(f"{outputPath}/NP_stats_contactSeparation.tsv", sep = "\t", index = True);
     # ------------------- Five stats -------------------
     df_all_NP.to_csv(f"{outputPath}/NP_stats_all.tsv", sep = "\t", index = True);
     # Permanent stats
-    # ------------------- One stat -------------------
-    df_parSec_P.to_csv(f"{outputPath}/P_stats_particleSectorPairs.tsv", sep = "\t", index = True);
-    df_seqDiff_P.to_csv(f"{outputPath}/P_stats_sequenceDifference.tsv", sep = "\t", index = True);
-    # ------------------- Two stats -------------------
-    df_all_P.to_csv(f"{outputPath}/P_stats_all.tsv", sep = "\t", index = True);
+    df_P.to_csv(f"{outputPath}/P_stats.tsv", sep = "\t", index = True);
