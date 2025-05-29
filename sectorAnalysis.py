@@ -9,10 +9,15 @@ i_PAR_RES = 3;
 i_EXTRA_CONTACTS = 5;
 # Only input should be a file with a list of files.
 files = open(sys.argv[sys.argv.index("-f") + 1], "r");
-outputPath = sys.argv[sys.argv.index("-o") + 1];
+outputSuff = sys.argv[sys.argv.index("-o") + 1];
+# Tracking integer IDs representing distinct PDB stuctures and
+# particles.
+structID = 0;
+parID = 0;
 
 # Looping through the files and tracking the contact set of each particle.
 for fileName in files:
+    parIDMap = dict();
     # Getting information from the file.
     print(f"Analyzing: {fileName}");
     currFile = open(fileName.rstrip(), "r");
@@ -54,6 +59,8 @@ for fileName in files:
                 filteredSet = filterSet(contactSet);
                 # Noting the contact set and then resetting it to empty.
                 particleContacts[lastPar] = filteredSet;
+                parIDMap[lastPar] = parID;
+                parID += 1;
                 contactSet = [];
                 lastPar = currPar;
             # Always adding the current line to the new contact set.
@@ -62,6 +69,8 @@ for fileName in files:
         if lastLine:
             filteredSet = filterSet(contactSet);
             particleContacts[currPar] = filteredSet;
+            parIDMap[currPar] = parID;
+            parID += 1;
     currFile.close();
     # Now we have all the contact sets for each particle
     # in the file, which we should extract to a set of overall
@@ -70,9 +79,9 @@ for fileName in files:
     # Pairwise analysis will look at pairwise probabilities, include sector-sector
     # contacts, contacts between amino-acid types, and the number of shared contacts.
     # This will require both the total edge set and the contact set for each particle.
-    analyze(edgeSet, particleContacts);
+    analyze(edgeSet, particleContacts, parIDMap, structID);
     # Deleting some of the bigger objects to hopefully save memory.
     del contactSet, particleContacts, edgeSet;
-export(outputPath);
+    structID += 1; # Iterating the structure ID each time a new structure file is opened.
 files.close();
-
+export(outputSuff);

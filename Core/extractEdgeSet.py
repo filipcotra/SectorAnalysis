@@ -15,7 +15,6 @@ i_CONTACT_RES = 7;
 i_CONTACT_AREA = 8;
 i_SECTOR_NUM = 9;
 i_RES_DIFF = 10;
-i_CONTACT_DISTANCE = 11;
 
 # Purpose: Populating the contents of a given file's
 # contact sets into an edge set and returning it.
@@ -49,7 +48,8 @@ def getEdgeSet(contactSets):
                 # Now that we have the corresponding sector,
                 # we can make the edge.
                 edge = (parName, parRes, parSector, contactName, contactRes, contactSector);
-                reverseEdge = edge[::-1];
+                reverseEdge = (contactName, contactRes, contactSector, parName, parRes, parSector);
+                # Making sure not to add redundant information.
                 if reverseEdge not in edgeSet:
                     edgeSet.add(edge);
             # No corresponding contact exists, so this edge does

@@ -18,7 +18,6 @@ i_CONTACT_RES = 7;
 i_CONTACT_AREA = 8;
 i_SECTOR_NUM = 9;
 i_RES_DIFF = 10;
-i_CONTACT_DISTANCE = 11;
 
 # Purpose: To fetch info from a given line.
 # Parameters:
@@ -62,7 +61,7 @@ def fetchLineInfo(line):
         return False
     return (parName, parAA, parType, parRes,
             contactName, contactAA, contactType, contactRes,
-            contactArea, sectorNum, resDiff, contactDistance);
+            contactArea, sectorNum, resDiff);
 
 # Purpose: To filter a contact set, removing any contacts which
 # share a sector with another, keeping the contact with the higher
