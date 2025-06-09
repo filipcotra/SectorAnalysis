@@ -37,13 +37,13 @@ def fetchLineInfo(line):
     # Information about the contact particle.
     contactName = lineList[5];  # Name of the contact particle (L0, for example)
     contactAA = contactName[0];  # One-letter AA code for the contact particle
-    contactType = "BB" if contactName[-1] == "0" else "SC";  # 0 indicates backbone, 1 indicates sidechain
-    contactRes = int(lineList[6]);  # Residue of the contact particle (Like 2)
+    contactType = "SV" if contactName == "O0" else "BB" if contactName[-1] == "0" else "SC"; # BB, SC, or SV.
+    contactRes = int(lineList[6]) if contactType != "SV" else "-"; # Residue of the contact particle (Like 2). 0 for SV.
     # General contact information.
     contactArea = float(lineList[8]);  # Area of the contact (>25 indicates a contact)
     sectorInfo = lineList[-1];  # Sector of the contact particle relative to the current particle
     # Calculating the difference between the residue positions.
-    resDiff = abs(contactRes - parRes);
+    resDiff = abs(contactRes - parRes) if contactType != "SV" else "-";
     # Getting sector information.
     if "=" in sectorInfo:
         sectorNum = int(re.search('(?<=\=).+', sectorInfo).group(0).rstrip().lstrip());

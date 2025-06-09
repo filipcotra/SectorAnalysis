@@ -10,19 +10,22 @@ i_EXTRA_CONTACTS = 5;
 # Only input should be a file with a list of files.
 files = open(sys.argv[sys.argv.index("-f") + 1], "r");
 outputSuff = sys.argv[sys.argv.index("-o") + 1];
+outputDir = sys.argv[sys.argv.index("-d") + 1];
 # Tracking integer IDs representing distinct PDB stuctures and
 # particles.
 structID = 0;
 parID = 0;
+SOLV_PAR = ("O0", "-");
 
 # Looping through the files and tracking the contact set of each particle.
 for fileName in files:
-    parIDMap = dict();
+    parIDMap = {SOLV_PAR: parID}; # Initializing the solvent molecule as residue 0.
+    parID += 1;
     # Getting information from the file.
     print(f"Analyzing: {fileName}");
     currFile = open(fileName.rstrip(), "r");
     # Tracking the contact set of each particle for the current file.
-    particleContacts = {};
+    particleContacts = {SOLV_PAR: []};
     # In this file, identifying the sectors for non-backbone contacts and
     # adding the respective amino acids to the sector values. Fetching info
     # by particle.
@@ -57,6 +60,10 @@ for fileName in files:
             # current contact set.
             if currPar != lastPar:
                 filteredSet = filterSet(contactSet);
+                # Noting the solvent contacts.
+                solvContacts = [x for x in filteredSet if "O0" in x];
+                revSolv = [x[4:8] + x[0:4] + (x[8],) + (-1,) + (x[10],) for x in solvContacts];
+                particleContacts[SOLV_PAR] += revSolv;
                 # Noting the contact set and then resetting it to empty.
                 particleContacts[lastPar] = filteredSet;
                 parIDMap[lastPar] = parID;
@@ -68,6 +75,9 @@ for fileName in files:
         # If we are on the last line, push the current contact set.
         if lastLine:
             filteredSet = filterSet(contactSet);
+            solvContacts = [x for x in filteredSet if "O0" in x];
+            revSolv = [x[4:8] + x[0:4] + (x[8],) + (-1,) + (x[10],) for x in solvContacts];
+            particleContacts[SOLV_PAR] += revSolv;
             particleContacts[currPar] = filteredSet;
             parIDMap[currPar] = parID;
             parID += 1;
@@ -84,4 +94,4 @@ for fileName in files:
     del contactSet, particleContacts, edgeSet;
     structID += 1; # Iterating the structure ID each time a new structure file is opened.
 files.close();
-export(outputSuff);
+export(outputDir, outputSuff);

@@ -38,14 +38,16 @@ rows = [];
 #   structID = The ID of the current structure.
 def analyze(edgeSet, particleContacts, parIDMap, structID):
     for edge in edgeSet:
-        resDiff = abs(edge[i_EDGE_RES_A] - edge[i_EDGE_RES_B]);
-        parA_isBB = edge[i_EDGE_NAME_A][-1] == "0";
-        parB_isBB = edge[i_EDGE_NAME_B][-1] == "0";
-        # Only happens with R group bonds or peptide bonds.
-        if resDiff == 0 or (resDiff == 1 and parA_isBB and parB_isBB):
-            permanentStatus = 1;
-        else:
-            permanentStatus = 0;
+        permanentStatus = 0;
+        try:
+            resDiff = abs(edge[i_EDGE_RES_A] - edge[i_EDGE_RES_B]);
+            parA_isBB = edge[i_EDGE_NAME_A][-1] == "0";
+            parB_isBB = edge[i_EDGE_NAME_B][-1] == "0";
+            # Only happens with R group bonds or peptide bonds.
+            if resDiff == 0 or (resDiff == 1 and parA_isBB and parB_isBB):
+                permanentStatus = 1;
+        except:
+            pass;
         analyzeEdge(edge, particleContacts, parIDMap, structID, permanentStatus);
 
 # ------ Methods to Populate the Data Frame ------
@@ -73,12 +75,18 @@ def analyzeEdge(edge, particleContacts, parIDMap, structID, permanentStatus):
     # Now building and adding a fake row.
     # Finding empty sectors which could be used for the
     # hard negative.
-    A_contactSet = particleContacts[A_par];
-    A_occupiedSectors = set([x[i_SECTOR_NUM] for x in A_contactSet]);
-    A_emptySectors = POSSIBLE_SECTORS - A_occupiedSectors;
-    B_contactSet = particleContacts[B_par];
-    B_occupiedSectors = set([y[i_SECTOR_NUM] for y in B_contactSet]);
-    B_emptySectors = POSSIBLE_SECTORS - B_occupiedSectors;
+    if A_res == "-":
+        A_emptySectors = {-1};
+    else:
+        A_contactSet = particleContacts[A_par];
+        A_occupiedSectors = set([x[i_SECTOR_NUM] for x in A_contactSet]);
+        A_emptySectors = POSSIBLE_SECTORS - A_occupiedSectors;
+    if B_res == "-":
+        B_emptySectors = {-1};
+    else:
+        B_contactSet = particleContacts[B_par];
+        B_occupiedSectors = set([y[i_SECTOR_NUM] for y in B_contactSet]);
+        B_emptySectors = POSSIBLE_SECTORS - B_occupiedSectors;
     # If there are no empty sectors, no hard negative can be made.
     if len(A_emptySectors) > 0 and len(B_emptySectors) > 0:
         A_newSector = rand.choice(list(A_emptySectors));
@@ -133,18 +141,23 @@ def buildRow(A_par, B_par, A_sector, B_sector, parIDMap, structID, permanentStat
     B_res = B_par[1];
     B_ID = parIDMap[B_par];
     # Information pertaining to both particles.
-    seqDiff = A_res - B_res;
-    seqSep = abs(seqDiff);
+    try:
+        seqDiff = A_res - B_res;
+        seqSep = abs(seqDiff);
+    except:
+        seqDiff = "-";
+        seqSep = "-";
     # Building and returning row.
     return (structID, A_ID, A_type, A_sector, B_ID, B_type, B_sector, seqSep, seqDiff, permanentStatus, edgeStatus);
 
 # Purpose: To export the dataframe.
 # Parameters:
+#   outputDir = The output directory.
 #   outputSuff = The suffix for the output file.
-def export(outputSuff):
+def export(outputDir, outputSuff):
     df = pd.DataFrame(rows, columns = ["Struct_ID",
                                        "ID_A", "Type_A", "Sector_A",
                                        "ID_B", "Type_B", "Sector_B",
                                        "Sequence_Separation", "Sequence_Difference",
                                        "Permanent_Status", "Edge_Status"]);
-    df.to_csv(f"statOutput/edges_{outputSuff}.tsv", sep = "\t", index = False);
+    df.to_csv(f"{outputDir}/edges_{outputSuff}.tsv", sep = "\t", index = False);

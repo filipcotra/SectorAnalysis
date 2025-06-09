@@ -37,24 +37,28 @@ def getEdgeSet(contactSets):
             # Collecting information about the contact.
             contactName = contact[i_CONTACT_NAME];
             contactRes = contact[i_CONTACT_RES];
-            contactKey = (contactName, contactRes);
-            # Now that we have the contact key, we can
-            # find the sector corresponding to this
-            # contact.
-            corrSet = contactSets[contactKey];
-            corrContact = [x for x in corrSet if x[i_CONTACT_NAME] == parName and x[i_CONTACT_RES] == parRes];
-            try:
-                contactSector = corrContact[0][i_SECTOR_NUM];
-                # Now that we have the corresponding sector,
-                # we can make the edge.
-                edge = (parName, parRes, parSector, contactName, contactRes, contactSector);
-                reverseEdge = (contactName, contactRes, contactSector, parName, parRes, parSector);
-                # Making sure not to add redundant information.
-                if reverseEdge not in edgeSet:
-                    edgeSet.add(edge);
-            # No corresponding contact exists, so this edge does
-            # not actually exist. Just pass, removing the contact
-            # from the current contact set.
-            except:
-                parContacts.remove(contact);
+            if contactName == "O0": # If a solvent molecule, assume the corresponding edge exists.
+                edge = (parName, parRes, parSector, contactName, contactRes, -1); # Solvent sector is always -1.
+                edgeSet.add(edge); # Cannot have reverse edges.
+            else:
+                contactKey = (contactName, contactRes);
+                # Now that we have the contact key, we can
+                # find the sector corresponding to this
+                # contact.
+                corrSet = contactSets[contactKey];
+                corrContact = [x for x in corrSet if x[i_CONTACT_NAME] == parName and x[i_CONTACT_RES] == parRes];
+                try:
+                    contactSector = corrContact[0][i_SECTOR_NUM];
+                    # Now that we have the corresponding sector,
+                    # we can make the edge.
+                    edge = (parName, parRes, parSector, contactName, contactRes, contactSector);
+                    reverseEdge = (contactName, contactRes, contactSector, parName, parRes, parSector);
+                    # Making sure not to add redundant information.
+                    if reverseEdge not in edgeSet:
+                        edgeSet.add(edge);
+                # No corresponding contact exists, so this edge does
+                # not actually exist. Just pass, removing the contact
+                # from the current contact set.
+                except:
+                    parContacts.remove(contact);
     return edgeSet;
